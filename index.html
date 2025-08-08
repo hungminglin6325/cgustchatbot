@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>CGUST Chatbot</title>
+</head>
+<body>
+  <h2>CGUST Chatbot 測試頁面</h2>
+  <input id="input" type="text" placeholder="請輸入問題..." style="width: 300px;">
+  <button onclick="send()">送出</button>
+
+  <div id="output" style="white-space: pre-wrap; margin-top: 20px;"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script>
+    async function send() {
+      const msg = document.getElementById("input").value;
+      const res = await fetch("https://hungming.app.n8n.cloud/webhook/01ea6ee0-8db7-4bad-994f-f43191bf58b8", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: msg })
+      });
+      const data = await res.json();
+      document.getElementById("output").innerHTML = marked.parse(data.result || "(無回應)");
+    }
+  </script>
+</body>
+</html>
