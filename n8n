@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>CGUST 聊天機器人</title>
+</head>
+<body style="font-family: sans-serif; padding: 2em;">
+  <h2>聊天機器人 🤖</h2>
+  <input id="question" placeholder="請輸入問題..." style="width: 80%; padding: 0.5em;" />
+  <button onclick="send()">送出</button>
+  <pre id="response" style="white-space: pre-wrap; margin-top: 1em;"></pre>
+
+  <script>
+    async function send() {
+      const input = document.getElementById("question").value;
+      const res = await fetch("https://your-n8n-domain.n8n.cloud/webhook/chat-agent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: input })
+      });
+      const data = await res.json();
+      document.getElementById("response").innerHTML = data.result;
+    }
+  </script>
+</body>
+</html>
