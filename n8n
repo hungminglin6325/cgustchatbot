@@ -10,31 +10,55 @@
   <button onclick="send()">送出</button>
   <pre id="response" style="white-space: pre-wrap; margin-top: 1em;"></pre>
 
-  <script>
-    async function send() {
-      const input = document.getElementById("question").value;
+ <script>
+  async function send() {
+    const input = document.getElementById("question").value;
+    const out = document.getElementById("response");
+    out.textContent = "處理中…";
+
+    try {
       const res = await fetch("https://hungming.app.n8n.cloud/webhook/01ea6ee0-8db7-4bad-994f-f43191bf58b8", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
         body: JSON.stringify({ query: input })
       });
-const raw = await res.text();
-if (!raw || raw.trim() === "") {
-  document.getElementById("response").innerHTML = "（沒有回傳資料）";
-  return;
-}
 
-let data;
-try {
-  data = JSON.parse(raw);
-} catch {
-  // 不是 JSON 就直接顯示原始文字
-  document.getElementById("response").innerHTML = raw;
-  return;
-}
+      if (!res.ok) throw new Error(`伺服器錯誤：${res.status}`);
 
-document.getElementById("response").innerHTML = data.result ?? "(無結果)";
+      const raw = await res.text();
+      if (!raw || raw.trim() === "") {
+        out.textContent = "（沒有回傳資料）";
+        return;
+      }
+
+      let result = "";
+      try {
+        const data = JSON.parse(raw);
+        result = data?.result ?? "";
+      } catch {
+        // 後端不是 JSON，就當純文字顯示
+        result = raw;
+      }
+
+      if (!result) {
+        out.textContent = "(無結果)";
+        return;
+      }
+
+      // 若是 Markdown 圖片語法：![...](url)
+      const mdImg = result.match(/!\[[^\]]*\]\(([^)]+)\)/);
+      const imgUrl = mdImg ? mdImg[1] : (/^https?:\/\/.*quickchart\.io\/chart/.test(result) ? result : null);
+
+      if (imgUrl) {
+        out.innerHTML = `<img src="${imgUrl}" alt="chart" style="max-width:100%;">`;
+      } else {
+        out.textContent = result;
+      }
+    } catch (err) {
+      out.textContent = "";
+      alert("錯誤：" + err.message);
     }
-  </script>
+  }
+</script>
 </body>
 </html>
