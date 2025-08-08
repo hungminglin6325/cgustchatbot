@@ -1,18 +1,19 @@
 <script>
-  const form = document.getElementById("chat-form");
-  const input = document.getElementById("query");
-  const errorBox = document.getElementById("error");
-
-  // 在輸入框下方加一個顯示區塊
-  const resultBox = document.createElement('div');
-  resultBox.id = 'result';
-  resultBox.style.marginTop = '20px';
-  resultBox.style.fontSize = '20px';
-  document.body.appendChild(resultBox);
-
-  form.addEventListener("submit", async function(e) {
+  document.getElementById("chat-form").addEventListener("submit", async function(e) {
     e.preventDefault();
+    const query = document.getElementById("query").value;
+    const errorBox = document.getElementById("error");
     errorBox.innerText = "";
+
+    // 建一個結果顯示區（如果沒有）
+    let resultBox = document.getElementById("result");
+    if (!resultBox) {
+      resultBox = document.createElement("div");
+      resultBox.id = "result";
+      resultBox.style.marginTop = "20px";
+      resultBox.style.fontSize = "20px";
+      document.body.appendChild(resultBox);
+    }
     resultBox.innerHTML = "處理中…";
 
     try {
@@ -22,66 +23,65 @@
           "Content-Type": "application/x-www-form-urlencoded",
           "Accept": "application/json"
         },
-        body: `query=${encodeURIComponent(input.value)}`
+        body: `query=${encodeURIComponent(query)}`
       });
 
       if (!response.ok) {
         throw new Error(`伺服器錯誤：${response.status}`);
       }
 
-      const ct = response.headers.get("content-type") || "";
-
-      if (ct.includes("application/json")) {
-        let data;
-        try {
-          data = await response.json(); // 這裡若 body 空會丟錯
-        } catch (parseErr) {
-          // 後端偶發回空內容，保底再取純文字
-          const fallbackText = await response.text();
-          if (fallbackText && fallbackText.trim().length > 0) {
-            resultBox.textContent = fallbackText;
-            return;
-          }
-          throw new Error("回傳為 JSON 但內容為空");
-        }
-
-        // 顯示結果（支援圖表 URL 或 Markdown 圖片語法）
-        const result = data.result ?? "";
-        if (!result) {
-          resultBox.textContent = "沒有回傳內容";
-          return;
-        }
-
-        // 如果是 Markdown 圖片語法：![...](url)
-        const mdImgMatch = result.match(/!\[[^\]]*\]\(([^)]+)\)/);
-        if (mdImgMatch) {
-          const img = document.createElement('img');
-          img.src = mdImgMatch[1];
-          img.alt = 'chart';
-          img.style.maxWidth = '100%';
-          resultBox.innerHTML = "";
-          resultBox.appendChild(img);
-        } else if (/^https?:\/\/.*quickchart\.io\/chart/.test(result)) {
-          // 直接回 QuickChart 連結也支援
-          const img = document.createElement('img');
-          img.src = result;
-          img.alt = 'chart';
-          img.style.maxWidth = '100%';
-          resultBox.innerHTML = "";
-          resultBox.appendChild(img);
-        } else {
-          // 其他一般文字
-          resultBox.textContent = result;
-        }
-
-      } else {
-        // 非 JSON：就當作純文字顯示
-        const text = await response.text();
-        resultBox.textContent = text || "回傳內容不是 JSON（且沒有文字）";
+      // 先把原始字串拿到
+      const raw = await response.text();
+      if (!raw || raw.trim() === "") {
+        throw new Error("回傳內容為空");
       }
+
+      // 嘗試解析 JSON；失敗就當純文字顯示
+      let data;
+      try {
+        data = JSON.parse(raw);
+      } catch {
+        resultBox.textContent = raw;
+        return;
+      }
+
+      const result = data && data.result ? String(data.result) : "";
+
+      if (!result) {
+        resultBox.textContent = "沒有回傳內容";
+        return;
+      }
+
+      // 如果是 Markdown 圖片語法：![...](url)
+      const mdImgMatch = result.match(/!\[[^\]]*\]\(([^)]+)\)/);
+      if (mdImgMatch) {
+        const img = document.createElement("img");
+        img.src = mdImgMatch[1];
+        img.alt = "chart";
+        img.style.maxWidth = "100%";
+        resultBox.innerHTML = "";
+        resultBox.appendChild(img);
+        return;
+      }
+
+      // 如果直接是 QuickChart 圖片網址
+      if (/^https?:\/\/.*quickchart\.io\/chart/.test(result)) {
+        const img = document.createElement("img");
+        img.src = result;
+        img.alt = "chart";
+        img.style.maxWidth = "100%";
+        resultBox.innerHTML = "";
+        resultBox.appendChild(img);
+        return;
+      }
+
+      // 其他一般文字
+      resultBox.textContent = result;
+
     } catch (err) {
       errorBox.innerText = "錯誤：" + err.message;
-      resultBox.innerHTML = "";
+      const resultBox = document.getElementById("result");
+      if (resultBox) resultBox.innerHTML = "";
     }
   });
 </script>
