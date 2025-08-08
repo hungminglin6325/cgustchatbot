@@ -18,8 +18,22 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query: input })
       });
-      const data = await res.json();
-      document.getElementById("response").innerHTML = data.result;
+const raw = await res.text();
+if (!raw || raw.trim() === "") {
+  document.getElementById("response").innerHTML = "（沒有回傳資料）";
+  return;
+}
+
+let data;
+try {
+  data = JSON.parse(raw);
+} catch {
+  // 不是 JSON 就直接顯示原始文字
+  document.getElementById("response").innerHTML = raw;
+  return;
+}
+
+document.getElementById("response").innerHTML = data.result ?? "(無結果)";
     }
   </script>
 </body>
