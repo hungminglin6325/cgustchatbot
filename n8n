@@ -13,7 +13,7 @@
   <script>
     async function send() {
       const input = document.getElementById("question").value;
-      const res = await fetch("https://your-n8n-domain.n8n.cloud/webhook/chat-agent", {
+      const res = await fetch("https://hungming.app.n8n.cloud/webhook-test/01ea6ee0-8db7-4bad-994f-f43191bf58b8", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query: input })
